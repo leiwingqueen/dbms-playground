@@ -29,12 +29,6 @@ type BufferDesc struct {
 	dirty      bool
 }
 
-// Page
-// pg page size is 8KB
-type Page struct {
-	data []byte
-}
-
 type BufferPool struct {
 	// mapping from buffer tag to buffer id
 	bufferMap         map[BufferTag]int
@@ -87,7 +81,7 @@ func (bufferPool *BufferPool) read(tag BufferTag) *Page {
 		bufferPool.bufferMap[tag] = bufferId
 		// load data from disk
 		page := loadPageFromDisk(tag)
-		bufferPool.bufferBlocks[bufferId] = *page
+		bufferPool.bufferBlocks[bufferId] = page
 		return &bufferPool.bufferBlocks[bufferId]
 	}
 	// TODO: page replacement strategy
@@ -103,12 +97,12 @@ func (bufferPool *BufferPool) read(tag BufferTag) *Page {
 	evictDesc.usageCount = 1
 	// load data from disk
 	page := loadPageFromDisk(tag)
-	bufferPool.bufferBlocks[evictBufferId] = *page
+	bufferPool.bufferBlocks[evictBufferId] = page
 	return &bufferPool.bufferBlocks[evictBufferId]
 }
 
-func loadPageFromDisk(tag BufferTag) *Page {
+func loadPageFromDisk(tag BufferTag) Page {
 	// mock function
 	data := make([]byte, PageSize)
-	return &Page{data: data}
+	return data
 }
