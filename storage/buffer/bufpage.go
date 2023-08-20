@@ -1,6 +1,30 @@
 package buffer
 
-type Page []byte
+import "unsafe"
+
+/**
+* +----------------+---------------------------------+
+* | PageHeaderData | linp1 linp2 linp3 ...           |
+* +-----------+----+---------------------------------+
+* | ... linpN |									  |
+* +-----------+--------------------------------------+
+* |		   ^ pd_lower							  |
+* |												  |
+* |			 v pd_upper							  |
+* +-------------+------------------------------------+
+* |			 | tupleN ...                         |
+* +-------------+------------------+-----------------+
+* |	   ... tuple3 tuple2 tuple1 | "special space" |
+* +--------------------------------+-----------------+
+*									^ pd_special
+ */
+type Page struct {
+	Header PageHeaderData
+	// line pointer array
+	LinePointers []ItemIdData
+	Tuples       []byte
+	SpecialSpace []byte
+}
 
 type PageXLogRecPtr uint64
 
@@ -19,21 +43,34 @@ type ItemIdData struct {
 
 type PageHeaderData struct {
 	// LSN: next byte after last byte of xlog record for last change to this page
-	pd_lsn PageXLogRecPtr
+	Lsn PageXLogRecPtr
 	// checksum
-	pd_checksum uint16
+	CheckSum uint16
 	// flag bits, see below
-	pd_flags uint16
+	Flags uint16
 	// offset to start of free space
-	pd_lower LocationIndex
+	Lower LocationIndex
 	// offset to end of free space
-	pd_upper LocationIndex
+	Upper LocationIndex
 	// offset to start of special space
-	pd_special LocationIndex
+	Special LocationIndex
 	// page size and page version
-	pd_pagesize_version uint16
-	// oldest prunable XID, or zero if none
-	pd_prune_xid TransactionId
-	// line pointer array
-	pd_linp []ItemIdData
+	PageSize uint16
+}
+
+func (p *Page) PageInit(pageSize uint16, specialSize uint16) {
+	// 先不考虑内存对齐的场景
+	p.Header.Lower = LocationIndex(unsafe.Sizeof(PageHeaderData{}))
+	p.Header.Upper = LocationIndex(pageSize - specialSize)
+	p.Header.Special = LocationIndex(pageSize - specialSize)
+	p.Header.PageSize = pageSize
+}
+
+func (p *Page) PageAddItemExtended(item []byte, size int32, offsetNumber int32, flags int32) int32 {
+	return 0
+}
+
+func (p *Page) PageGetFreeSpace() int32 {
+	// TODO
+	return 0
 }
